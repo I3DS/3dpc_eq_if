@@ -18,6 +18,10 @@
 #include "stereo_reconstruction.h"
 #include "disparity_generator.hpp"
 
+#include <i3ds/configurator.hpp>
+
+#include <boost/program_options.hpp>
+namespace po = boost::program_options;
 
 std::atomic<bool> running;
 
@@ -29,6 +33,27 @@ signal_handler(int)
 
 int main(int argc, char *argv[])
 {
+
+    int merger_node, cam_1_node, cam_2_node;
+
+    po::options_description desc("Service for merging two camera streams into one stereo image stream\n  Available options");
+    i3ds::Configurator configurator;
+
+    configurator.add_common_options(desc);
+    desc.add_options()
+    ("node,n", po::value<int>(&merger_node)->required(), "NodeID of camera_merger")
+    ("cam_1_node", po::value<int>(&cam_1_node)->required(), "NodeID of left input camera")
+    ("cam_2_node", po::value<int>(&cam_2_node)->required(), "NodeID of right input camera")
+    ;
+
+    po::variables_map vm = configurator.parse_common_options(desc, argc, argv);
+
+
+    i3ds::Context::Ptr context = i3ds::Context::Create();;
+    i3ds::Server server(context);
+
+    server.Start();
+
     std::string calibration_file = "../calibration/calib_params_stereo.xml";
     std::map<std::string, int> reconstruction_parameters;
     reconstruction_parameters["numDisparities"] = 5*16;
@@ -45,8 +70,10 @@ int main(int argc, char *argv[])
 
     std::shared_ptr<StereoReconstruction> stereo_reconstruction = std::make_shared<StereoReconstruction>(calibration_file, reconstruction_parameters);
 
-    DisparityGenerator(Context::Ptr context, i3ds_asn1::NodeID node_id,
-               i3ds_asn1::NodeID cam_1_node_id, i3ds_asn1::NodeID cam_2_node_id);
+    i3ds::DisparityGenerator disparity_generator(context, merger_node,
+               cam_1_node, cam_2_node,
+               stereo_reconstruction);
+    disparity_generator.Attach(server);
 
     running = true;
     signal(SIGINT, signal_handler);
@@ -54,6 +81,7 @@ int main(int argc, char *argv[])
     while (running) {
         std::this_thread::sleep_for(std::chrono::milliseconds(100));
     }
+    server.Stop();
 
     return 0;
 }

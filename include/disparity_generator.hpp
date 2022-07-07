@@ -11,12 +11,14 @@
 #ifndef __I3DS_DISPARITY_GENERATOR
 #define __I3DS_DISPARITY_GENERATOR
 
+#include <i3ds/frame.hpp>
 #include <i3ds/sensor.hpp>
 #include <i3ds/depthmap.hpp>
 #include <i3ds/topic.hpp>
 #include <i3ds/publisher.hpp>
 #include <i3ds/subscriber.hpp>
 #include <i3ds/camera_client.hpp>
+#include <i3ds/opencv_convertion.hpp>
 
 #include <memory>
 #include <condition_variable>
@@ -55,7 +57,8 @@ private:
 
   struct Buffer
   {
-    Frame frame_;
+    cv::Mat mat_;
+    unsigned long timestamp_;
     bool data_ready_;
   };
 
@@ -74,32 +77,39 @@ private:
         {
           for (auto& buffer : buffers_)
             {
-              free((void*)(buffer.frame_.image_data(0)));
+   //           free((void*)(buffer.frame_.image_data(0)));
             }
         }
     }
 
-    void initialize(size_t size)
+    // Allocate memory for storing a picture in each Buffers Frame object
+    void initialize(Frame frame)
     {
-      size_ = size;
+      size_ = frame.image_size(0);
       for (auto& buffer : buffers_)
         {
-          buffer.data_ = static_cast<i3ds_asn1::byte*>(malloc(size_));
+  //        buffer.frame_.append_image(static_cast<i3ds_asn1::byte*>(malloc(size_)), size_);
           buffer.data_ready_ = false;
         }
       allocated_ = true;
     }
 
-    void put_data(const i3ds_asn1::byte* data, const unsigned long timestamp)
+    void put_data(Frame frame)
     {
+      if (!allocated_)
+      {
+        initialize(frame);
+      }
+
       unsigned int current_write_index; //Make sure to use same index during and after write
       {
         std::unique_lock<std::mutex> lock(mutex_);
         current_write_index = write_index_;
         buffers_[current_write_index].data_ready_ = false;
       }
-      std::memcpy(buffers_[current_write_index].data_, data, size_);
-      buffers_[current_write_index].timestamp_ = timestamp;
+      cv::Mat tmp = frame_to_cv_mat(frame, 0);
+      buffers_[current_write_index].mat_ = tmp.clone();
+      buffers_[current_write_index].timestamp_ = frame.descriptor.attributes.timestamp;
       {
         std::unique_lock<std::mutex> lock(mutex_);
         buffers_[current_write_index].data_ready_ = true;
@@ -153,8 +163,6 @@ private:
   CameraClient cam_2_client_;
 
   std::vector<BufferPair> camera_buffers_;
-
-  i3ds_asn1::FrameDescriptor stored_descriptor_;
 
   std::atomic<bool> run_publiser_thread_;
   std::thread publisher_thread_;

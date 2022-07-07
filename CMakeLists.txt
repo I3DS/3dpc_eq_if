@@ -17,13 +17,14 @@ find_package(OpenCV REQUIRED)
 include_directories(${OpenCV_INCLUDE_DIRS})
 include_directories("include/")
 
-add_executable(3dpc_eq_if main.cpp src/disparity_generator.cpp)
+add_executable(3dpc_eq_if main.cpp src/disparity_generator.cpp src/stereo_reconstruction.cpp)
 
 set (LIBS
     zmq
     i3ds
     i3ds_asn1
     i3ds_clients
+    i3ds_emulators
     ${Boost_LIBRARIES}
     ${OpenCV_LIBS}
   )

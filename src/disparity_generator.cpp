@@ -17,6 +17,7 @@
 #define BOOST_LOG_DYN_LINK
 #endif
 
+#include "stereo_reconstruction.h"
 
 #include <boost/log/core.hpp>
 #include <boost/log/trivial.hpp>
@@ -138,15 +139,10 @@ i3ds::DisparityGenerator::handle_frames(i3ds::Frame data, int cam_number)
 {
   BOOST_LOG_TRIVIAL(trace) << "DisparityGenerator received frame from camera: " << cam_number;
 
-  if (!camera_buffers_[cam_number].allocated_)
-    {
-      stored_descriptor_ = data.descriptor;
-      camera_buffers_[cam_number].initialize(data.image_size(0));
-    }
 
   if (data.descriptor.attributes.validity == i3ds_asn1::SampleValidity_sample_valid)
     {
-      camera_buffers_[cam_number].put_data(data.image_data(0), data.descriptor.attributes.timestamp);
+      camera_buffers_[cam_number].put_data(data);
     }
   else
     {
@@ -157,24 +153,22 @@ i3ds::DisparityGenerator::handle_frames(i3ds::Frame data, int cam_number)
 void
 i3ds::DisparityGenerator::process_and_send(Buffer cam_1_data, Buffer cam_2_data)
 {
-  DisparityMapTopic::Data disparity_map;
-  DisparityMapTopic::Initialize(disparity_map);
+  DisparityMapTopic::Data disparity_depthmap;
+  DisparityMapTopic::Initialize(disparity_depthmap);
 
-  disparity_map.descriptor.width = stored_descriptor_.region.size_x;
-  disparity_map.descriptor.height = stored_descriptor_.region.size_y;
-  disparity_map.descriptor.attributes.timestamp = cam_1_data.timestamp_;
-  disparity_map.descriptor.attributes.validity = i3ds_asn1::SampleValidity_sample_valid;
+  disparity_depthmap.descriptor.width = cam_1_data.mat_.cols;
+  disparity_depthmap.descriptor.height = cam_1_data.mat_.rows;
+  disparity_depthmap.descriptor.attributes.timestamp = cam_1_data.timestamp_;
+  disparity_depthmap.descriptor.attributes.validity = i3ds_asn1::SampleValidity_sample_valid;
 
   //TODO Call TAS-I code
-  cv::Mat img_left = 
-  cv::Mat disparity_map = stereo_reconstruction_->disparity_from_stereovision(img_left, img_right);
+  cv::Mat disparity_map = stereo_reconstruction_->disparity_from_stereovision(cam_1_data.mat_, cam_2_data.mat_);
 
-  //merged_frame.append_image(cam_1_data.data_, camera_buffers_[0].size_);
-  //merged_frame.append_image(cam_2_data.data_, camera_buffers_[1].size_);
+  disparity_depthmap.depths.assign(disparity_map.datastart, disparity_map.dataend);
 
   BOOST_LOG_TRIVIAL(info) << "DisparityGenerator sending merged frame with timestamp: " <<
-                             disparity_map.descriptor.attributes.timestamp;
-  publisher_.Send<DisparityMapTopic>(disparity_map);
+                             disparity_depthmap.descriptor.attributes.timestamp;
+  publisher_.Send<DisparityMapTopic>(disparity_depthmap);
   update_and_check_batch_count();
 
 }
