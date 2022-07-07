@@ -71,36 +71,10 @@ private:
       write_index_(0)
     {}
 
-    virtual ~BufferPair()
-    {
-      if (allocated_)
-        {
-          for (auto& buffer : buffers_)
-            {
-   //           free((void*)(buffer.frame_.image_data(0)));
-            }
-        }
-    }
-
-    // Allocate memory for storing a picture in each Buffers Frame object
-    void initialize(Frame frame)
-    {
-      size_ = frame.image_size(0);
-      for (auto& buffer : buffers_)
-        {
-  //        buffer.frame_.append_image(static_cast<i3ds_asn1::byte*>(malloc(size_)), size_);
-          buffer.data_ready_ = false;
-        }
-      allocated_ = true;
-    }
+    virtual ~BufferPair() = default;
 
     void put_data(Frame frame)
     {
-      if (!allocated_)
-      {
-        initialize(frame);
-      }
-
       unsigned int current_write_index; //Make sure to use same index during and after write
       {
         std::unique_lock<std::mutex> lock(mutex_);
@@ -135,7 +109,6 @@ private:
     }
 
     bool allocated_;
-    size_t size_;
 
   private:
     std::mutex mutex_;

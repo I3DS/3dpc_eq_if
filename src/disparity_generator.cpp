@@ -161,7 +161,6 @@ i3ds::DisparityGenerator::process_and_send(Buffer cam_1_data, Buffer cam_2_data)
   disparity_depthmap.descriptor.attributes.timestamp = cam_1_data.timestamp_;
   disparity_depthmap.descriptor.attributes.validity = i3ds_asn1::SampleValidity_sample_valid;
 
-  //TODO Call TAS-I code
   cv::Mat disparity_map = stereo_reconstruction_->disparity_from_stereovision(cam_1_data.mat_, cam_2_data.mat_);
 
   disparity_depthmap.depths.assign(disparity_map.datastart, disparity_map.dataend);
@@ -170,7 +169,6 @@ i3ds::DisparityGenerator::process_and_send(Buffer cam_1_data, Buffer cam_2_data)
                              disparity_depthmap.descriptor.attributes.timestamp;
   publisher_.Send<DisparityMapTopic>(disparity_depthmap);
   update_and_check_batch_count();
-
 }
 
 void

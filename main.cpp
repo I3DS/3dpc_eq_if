@@ -9,6 +9,7 @@
 ////////////////////////////////////////////////////////////////////////////////
 
 
+#include <boost/program_options/value_semantic.hpp>
 #include <csignal>
 #include <chrono>
 #include <thread>
@@ -35,7 +36,7 @@ int main(int argc, char *argv[])
 {
 
     int merger_node, cam_1_node, cam_2_node;
-
+    std::string calibration_file;
     po::options_description desc("Service for merging two camera streams into one stereo image stream\n  Available options");
     i3ds::Configurator configurator;
 
@@ -44,6 +45,7 @@ int main(int argc, char *argv[])
     ("node,n", po::value<int>(&merger_node)->required(), "NodeID of camera_merger")
     ("cam_1_node", po::value<int>(&cam_1_node)->required(), "NodeID of left input camera")
     ("cam_2_node", po::value<int>(&cam_2_node)->required(), "NodeID of right input camera")
+    ("calibration_file,c", po::value<std::string>(&calibration_file)->required(), "Calibration file path")
     ;
 
     po::variables_map vm = configurator.parse_common_options(desc, argc, argv);
@@ -52,8 +54,6 @@ int main(int argc, char *argv[])
     i3ds::Context::Ptr context = i3ds::Context::Create();;
     i3ds::Server server(context);
 
-
-    std::string calibration_file = "../calibration/calib_params_stereo.xml";
     std::map<std::string, int> reconstruction_parameters;
     reconstruction_parameters["numDisparities"] = 5*16;
     reconstruction_parameters["blockSize"] = 4*2 + 5;
