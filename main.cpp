@@ -52,7 +52,6 @@ int main(int argc, char *argv[])
     i3ds::Context::Ptr context = i3ds::Context::Create();;
     i3ds::Server server(context);
 
-    server.Start();
 
     std::string calibration_file = "../calibration/calib_params_stereo.xml";
     std::map<std::string, int> reconstruction_parameters;
@@ -75,6 +74,7 @@ int main(int argc, char *argv[])
                stereo_reconstruction);
     disparity_generator.Attach(server);
 
+    server.Start();
     running = true;
     signal(SIGINT, signal_handler);
 
