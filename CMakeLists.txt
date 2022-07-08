@@ -30,3 +30,7 @@ set (LIBS
   )
 
 target_link_libraries(3dpc_eq_if ${LIBS})
+install (TARGETS 3dpc_eq_if DESTINATION bin)
+install (FILES
+  ${PROJECT_SOURCE_DIR}/calibration/calib_params_stereo.xml
+  DESTINATION ${CMAKE_INSTALL_SYSCONFDIR}/3dpc_eq_if/calib)
