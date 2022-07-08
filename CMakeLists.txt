@@ -25,6 +25,7 @@ set (LIBS
     i3ds_asn1
     i3ds_clients
     i3ds_emulators
+    pthread
     ${Boost_LIBRARIES}
     ${OpenCV_LIBS}
   )
