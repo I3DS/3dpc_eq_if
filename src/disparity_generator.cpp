@@ -12,6 +12,7 @@
 #include <i3ds/opencv_convertion.hpp>
 #include <disparity_generator.hpp>
 #include <i3ds_asn1/SampleAttribute.hpp>
+#include <opencv2/opencv.hpp>
 
 #ifndef BOOST_LOG_DYN_LINK
 #define BOOST_LOG_DYN_LINK
@@ -161,9 +162,12 @@ i3ds::DisparityGenerator::process_and_send(Buffer cam_1_data, Buffer cam_2_data)
   disparity_depthmap.descriptor.attributes.timestamp = cam_1_data.timestamp_;
   disparity_depthmap.descriptor.attributes.validity = i3ds_asn1::SampleValidity_sample_valid;
 
+
   cv::Mat disparity_map = stereo_reconstruction_->disparity_from_stereovision(cam_1_data.mat_, cam_2_data.mat_);
 
-  disparity_depthmap.depths.assign(disparity_map.datastart, disparity_map.dataend);
+  cv::Mat output_points = stereo_reconstruction_->pcl_from_disparity(disparity_map);    
+
+  disparity_depthmap.depths.assign(output_points.datastart, output_points.dataend);
 
   BOOST_LOG_TRIVIAL(info) << "DisparityGenerator sending merged frame with timestamp: " <<
                              disparity_depthmap.descriptor.attributes.timestamp;

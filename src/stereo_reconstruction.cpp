@@ -42,8 +42,8 @@ Mat StereoReconstruction::disparity_from_stereovision(Mat img_left, Mat img_righ
 
     Mat img_left_gray, img_right_gray;        
     
-    cvtColor(img_left, img_left_gray, cv::COLOR_RGB2GRAY);
-    cvtColor(img_right, img_right_gray, cv::COLOR_RGB2GRAY);
+    //cvtColor(img_left, img_left_gray, cv::COLOR_RGB2GRAY);
+    //cvtColor(img_right, img_right_gray, cv::COLOR_RGB2GRAY);
 
     Mat img_left_nice, img_right_nice; 
 
